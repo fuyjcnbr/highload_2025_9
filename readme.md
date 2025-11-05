@@ -128,7 +128,7 @@ limit 70
 uv run /src/test_cluster_insert.py
 ```
 
-### На контейнере лидера patroni переключаем лидера
+### На контейнере лидера patroni переключаем лидера (текущий лидер - patroni3)
 
 ```commandline
 patronictl switchover --leader patroni3 --candidate patroni2

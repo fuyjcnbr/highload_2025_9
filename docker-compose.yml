@@ -96,6 +96,7 @@ services:
         image: highload_hw_9
         ports:
             - "8223:8223"
+            - "8089:8089"
         networks: [ demo ]
 #        env_file: docker/patroni.env
         hostname: highload_hw_9

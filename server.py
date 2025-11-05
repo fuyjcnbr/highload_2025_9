@@ -80,6 +80,9 @@ ALGORITHM ="HS256"
 ACCESS_TOKEN_EXPIRES_MINUTES = 800
 
 
+DSN_MASTER = f'dbname={PG_DATABASE} user={PG_USER} password={PG_PASSWORD} host=haproxy port=5000'
+
+
 @dataclass
 class PatroniNode:
     server_name: str
@@ -303,6 +306,24 @@ def check_str(s: str) -> bool:
 
 # __patroni = Patroni()
 
+
+async def query_master(query: str):
+    dsn = DSN_MASTER
+    if not dsn:
+        return None
+    try:
+        async with asyncio.timeout(5):
+            async with aiopg.connect(dsn) as con:
+                async with con.cursor() as cursor:
+                    await cursor.execute(query)
+                    result = []
+                    async for row in cursor:
+                        result.append(row)
+                    return result
+    except Exception as e:
+        return None
+
+
 async def query(query: str):
     dsn = await Patroni().get_dsn(query)
     if not dsn:
@@ -456,6 +477,22 @@ async def search_by_name_surname(x: SearchByNameSurnameItem):
     d = json.dumps(result)
     # unicodedata.normalize('NFKD', x).encode('ascii', 'ignore')
     return d
+
+
+@app.post("/user/master/search")
+async def search_by_name_surname_master(x: SearchByNameSurnameItem):
+    data = jsonable_encoder(x)
+    name_ = data["name_prefix"]
+    surname_ = data["surname_prefix"]
+    result = await asyncio.gather(
+        query_master(f"""
+        select *
+        from test_schema.backend_api_search_user_name_surname(name_ := '{name_}', surname_ := '{surname_}')
+        """),
+    )
+    d = json.dumps(result)
+    return d
+
 
 
 @app.post("/test/select1")
